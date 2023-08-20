@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Take a Photo</title>
+</head>
+<body align='center'>
+    <h1>Take a Photo</h1>
+    <video id="video" autoplay></video>
+    <button id="capture">Capture</button>
+    <canvas id="canvas"></canvas>
+    <img id="photo" alt="Your photo will appear here" style="display: none;">
+
+    <script>
+        // Get references to the video, canvas, and capture button elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photo = document.getElementById('photo');
+        const captureButton = document.getElementById('capture');
+
+        // Check for browser support
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Access the user's webcam
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    // Assign the webcam stream to the video element
+                    video.srcObject = stream;
+                })
+                .catch(function (error) {
+                    console.error('Error accessing the webcam:', error);
+                });
+
+            // Capture button click event
+            captureButton.addEventListener('click', function () {
+                // Draw the current video frame onto the canvas
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Display the captured photo as an image
+                photo.src = canvas.toDataURL('image/png');
+                photo.style.display = 'block';
+            });
+        } else {
+            console.error('getUserMedia is not supported in this browser');
+        }
+    </script>
+</body>
+</html>
+
+[root@ip-172-31-15-254 html]# cat video.html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Video Streaming</title>
+</head>
+<body>
+    <h1>Video Streaming</h1>
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+    <button id="startButton">Start Streaming</button>
+    <button id="stopButton">Stop Streaming</button>
+
+</body>
+<script>
+    const localVideo = document.getElementById('localVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+const startButton = document.getElementById('startButton');
+const stopButton = document.getElementById('stopButton');
+
+let localStream;
+let peerConnection;
+
+// Function to start video streaming
+async function startStreaming() {
+    try {
+        // Get user media (access to webcam and microphone)
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+        // Display the local stream in the local video element
+        localVideo.srcObject = localStream;
+
+        // Create a peer connection
+        peerConnection = new RTCPeerConnection();
+
+        // Add the local stream to the peer connection
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        // Set up event handlers for the peer connection
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                // Send the ICE candidate to the remote peer (you would typically send it via a signaling server)
+            }
+        };
+
+        peerConnection.ontrack = event => {
+            // Display the remote stream in the remote video element
+            remoteVideo.srcObject = event.streams[0];
+        };
+
+        // Create an offer to start the peer connection
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        // Send the offer to the remote peer (you would typically send it via a signaling server)
+
+    } catch (error) {
+        console.error('Error starting video streaming:', error);
+    }
+}
+
+// Function to stop streaming
+function stopStreaming() {
+    // Close the peer connection and release the local stream
+    if (peerConnection) {
+        peerConnection.close();
+    }
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Clear video elements
+    localVideo.srcObject = null;
+    remoteVideo.srcObject = null;
+}
+
+// Event listeners for start and stop buttons
+startButton.addEventListener('click', startStreaming);
+stopButton.addEventListener('click', stopStreaming);
+
+</script>
+</html>
